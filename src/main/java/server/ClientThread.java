@@ -30,11 +30,11 @@ public class ClientThread extends Thread
             Scanner scan = new Scanner(socket.getInputStream());
             PrintWriter print = new PrintWriter(socket.getOutputStream(), true);
             String msg = "";
-            print.println("Connected - "+dateFormat.format(date));
+            print.println("Connected - " + dateFormat.format(date));
             while (true)
             {
                 msg = scan.nextLine();
-                if (msg.equals("LOGOUT"))
+                if (msg.equals("LOGOUT") || msg.equals("QUIT"))
                 {
                     scan.close();
                     print.close();
@@ -42,9 +42,14 @@ public class ClientThread extends Thread
                     System.out.println("Client disconnected");
                     break;
                 }
-                else{
+                if (msg.startsWith("LOGIN:"))
+                {
+                    String temp = msg.substring(6, msg.length());
+                    print.println("Welcome: " + temp);
+                } else
+                {
                     print.println(msg.toUpperCase());
-                }            
+                }
             }
         } catch (IOException ex)
         {
