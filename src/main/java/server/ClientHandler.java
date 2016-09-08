@@ -3,9 +3,10 @@ package server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.NoSuchElementException;
+//import java.text.DateFormat;
+//import java.text.SimpleDateFormat;
+//import java.util.Date;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,8 +19,8 @@ public class ClientHandler extends Thread
     String username = "";
     Scanner scan;
     PrintWriter print;
-    static DateFormat dateFormat = new SimpleDateFormat("EEEEEEEEE dd. LLLLLLLL yyyy HH:mm:ss zzz");
-    static Date date = new Date();
+    //static DateFormat dateFormat = new SimpleDateFormat("EEEEEEEEE dd. LLLLLLLL yyyy HH:mm:ss zzz");
+    //static Date date = new Date();
 
     public ClientHandler(Socket socket, Server server) throws IOException
     {
@@ -49,7 +50,7 @@ public class ClientHandler extends Thread
     {
         try
         {
-            print.println("Connected - " + dateFormat.format(date));
+            //print.println("Connected - " + dateFormat.format(date));
             String msg = scan.nextLine();
             String[] input = msg.split(":");
             if (!input[0].equals("LOGIN"))
@@ -57,12 +58,13 @@ public class ClientHandler extends Thread
                 scan.close();
                 print.close();
                 socket.close();
+                System.out.println("Client disconnected");
                 return;
             } else
             {
                 server.addUser(msg, this);
             }
-            while (!msg.equals("LOGOUT"))
+            while (!msg.equals("LOGOUT:"))
             {
                 msg = scan.nextLine();
                 input = msg.split(":");
@@ -71,30 +73,14 @@ public class ClientHandler extends Thread
                     case "MSG":
                         server.sendMsg(msg, this);
                         break;
-                    case "LOGOUT":
-                        scan.close();
-                        print.close();
-                        socket.close();
-                        server.cList.remove(this);
-                        String list = "Connected users: ";
-
-                        for (ClientHandler user : server.cList)
-                        {
-                            list = list + user.getUsername() + ",";
-                        }
-
-                        list = list.substring(0, list.length() - 1);
-                        for (ClientHandler user : server.cList)
-                        {
-                            user.post(list);
-                        }
-                        System.out.println("Client disconnected");
-                        break;
                 }
             }
-        } catch (IOException ex)
+            server.logout(this);
+        } catch (IOException | NoSuchElementException ex)
         {
+            Logger.getLogger(Log.LOG_NAME).log(Level.SEVERE, null, ex);
             Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+            server.logout(this);
         }
     }
 

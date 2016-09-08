@@ -12,11 +12,11 @@ import java.util.logging.Logger;
 
 public class Server
 {
-    
+
     static String ip = "localhost"; //138.68.68.132
     static int port = 7777;
     ArrayList<ClientHandler> cList = new ArrayList<>();
-    
+
     public static void main(String[] args) throws IOException
     {
         if (args.length == 2)
@@ -24,10 +24,11 @@ public class Server
             ip = args[0];
             port = Integer.parseInt(args[1]);
         }
-        
+
         Server server = new Server();
         ExecutorService executor = Executors.newCachedThreadPool();
         ServerSocket ss = new ServerSocket();
+        Log.setLogFile("logFile.txt", "ServerLog");
         ss.bind(new InetSocketAddress(ip, port));
         System.out.println("Server started\nPort: " + port + "\nIP: " + ip);
         executor.execute(()
@@ -38,48 +39,35 @@ public class Server
                         try
                         {
                             Socket socket = ss.accept();
-                            ClientHandler ct = new ClientHandler(socket, server);
-                            executor.execute(ct);
+                            ClientHandler ch = new ClientHandler(socket, server);
+                            executor.execute(ch);
                             System.out.println("New client connected");
-//                            for (int i = 0; i < server.cList.size(); i++)
-//                            {
-//                                System.out.println(server.cList.get(i).getSocket());
-//                            }
                         } catch (IOException ex)
                         {
+                            Logger.getLogger(Log.LOG_NAME).log(Level.SEVERE, null, ex);
                             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
         });
     }
-    
-    public void addUser(String msg, ClientHandler ct)
+
+    public void addUser(String msg, ClientHandler ch)
     {
         String[] ca = msg.split(":");
-        ct.username = ca[1];
-        cList.add(ct);
-        String list = "Connected users: ";   
-        
-        for (ClientHandler user : cList)
-        {
-            list = list + user.getUsername() + ",";
-        }
-        
-        list = list.substring(0, list.length() - 1);
-        for(ClientHandler user : cList)
-        {
-            user.post(list);
-        }
+        ch.username = ca[1];
+        cList.add(ch);
+        Logger.getLogger(Log.LOG_NAME).log(Level.INFO, ca[1]+" logged in");
+        printList();
     }
-    
-    public void sendMsg(String msg, ClientHandler ct)
+
+    public void sendMsg(String msg, ClientHandler ch)
     {
         String[] array = msg.split(":");
         if (array[1].isEmpty())
         {
             for (ClientHandler user : cList)
             {
-                user.post("MSGRES:" + ct.username + ":" + array[2]);
+                user.post("MSGRES:" + ch.username + ":" + array[2]);
             }
         } else
         {
@@ -90,10 +78,41 @@ public class Server
                 {
                     if (user.getUsername().equals(users))
                     {
-                        user.post("MSGRES:" + ct.username + ":" + array[2]);
+                        user.post("MSGRES:" + ch.username + ":" + array[2]);
                     }
                 }
             }
         }
-    }    
+    }
+
+    public void printList()
+    {
+        String list = "CLIENTLIST:";
+        for (ClientHandler user : cList)
+        {
+            list = list + user.getUsername() + ",";
+        }
+        list = list.substring(0, list.length() - 1);
+        for (ClientHandler user : cList)
+        {
+            user.post(list);
+        }
+    }
+
+    public void logout(ClientHandler ch)
+    {
+        try
+        {
+            ch.scan.close();
+            ch.print.close();
+            ch.socket.close();
+            cList.remove(ch);
+            printList();
+            Logger.getLogger(Log.LOG_NAME).log(Level.INFO, ch.getUsername()+" logged out");
+        } catch (IOException ex)
+        {
+            Logger.getLogger(Log.LOG_NAME).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }
