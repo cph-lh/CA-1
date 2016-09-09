@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public class Server
 {
 
-    static String ip = "localhost"; //138.68.68.132
+    static String ip = "138.68.68.132";
     static int port = 7777;
     ArrayList<ClientHandler> cList = new ArrayList<>();
 
